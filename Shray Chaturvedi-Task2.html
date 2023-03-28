@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://kit.fontawesome.com/edd3c41621.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <style>
+         #a{
+            border: 1px solid lightgray; 
+            padding:5px 10px;
+        };
+    </style>
+</head>
+<body>
+    <div class="container-fluid" >
+        <div id="show"></div>
+    </div>    
+</body>
+<script>
+    const customer = [];
+    const booking = [];
+    const Payment = ['Confirm','Pending'];
+
+    const Shots = ['Spinning Elevation Shot','Half Moon Bay Shot','Object Shot','180-Degree Shot','Obstacle Shot to Reveal Subject','Object Shot with Large Reveal Down','Slow Reveal Out of Subject','High Angle Shot','Arc Shot','Tracking Shot'];
+
+    const cat = ['Local Travel','Communication','Out of City Travel','Others'];
+    const customerName = [];
+    let num = 0;
+    let id = '';
+    let num2 = 0;
+    let bid = '';
+    let myBooking = {};
+    let myCustomer = {};
+    let editIndex = -1;
+    let errors = {};
+    let error2 = {};
+    let per = [];
+    show();
+    function show(active=0){
+        let html = makeNavbar(active);
+        active === 1 ? html += showCustomerTable () : html += '';
+        active === 2 ? html += showForm() : html += '';
+        active === 6 ? html += showBookingTable () : html += '';
+        active === 7 ? html += showBookingForm() : html += '';
+        document.getElementById('show').innerHTML = html;
+
+    };
+    function showCustomers(){
+        editIndex = -1;
+        myBooking = {};
+        myCustomer = {};
+        show(1);
+    };
+
+    function addCustomerForm(){
+        show(2);
+    };
+
+    function showBookings(){
+        editIndex = -1;
+        myBooking = {};
+        myCustomer = {};
+        show(6);
+    };
+
+    function addBookingForm(){
+        show(7);
+    };
+
+    function showCustBooking(id){
+        let html = makeNavbar(0);
+        html += personBookingTable(id);
+        document.getElementById('show').innerHTML = html;
+    };
+    function sort(colNo){
+        switch(colNo){
+            case 0 : customer.sort((p1,p2) => p1.name.localeCompare(p2.name));
+            break;
+            case 1 : customer.sort((p1,p2) => p1.email.localeCompare(p2.email));
+            break;
+            case 2 : customer.sort((p1,p2) => (+p1.phoneNo)-(+p2.phoneNo));
+            break;
+            case 3 : customer.sort((p1,p2) => p1.address.localeCompare(p2.address));
+            break;
+            case 4 : customer.sort((p1,p2) => p1.custId.localeCompare(p2.custId));
+            break;
+            // case 5 : emp.sort((p1,p2) =>p1.workEx.localeCompare(p2.workEx));
+            // break;
+        };
+        showCustomers();
+    };
+
+    function submitCustomer(){
+        let custName = document.getElementById('name').value;
+        let email = document.getElementById('email').value;
+        let phone = document.getElementById('phone').value;
+        let address = document.getElementById('address').value;
+
+        let pr = {custId:id, name:custName, email:email, phoneNo:phone, address:address};
+        if(validate(pr)){
+            if(editIndex==-1){
+            // console.log(num,id)
+            num = num*1 + 1;
+            id = 'CUST' + num;
+        }
+        pr.custId=id;
+        customerName.push(custName);
+        editIndex>=0 ? customer[editIndex]=pr :customer.push(pr);
+        editIndex>=0 ? swal("Update!", "Customer successfully updated", "success") : swal("Add!", "Customer successfully added", "success");
+        showCustomers();
+        }
+        else{
+            myCustomer = pr;
+            addCustomerForm();
+        }
+    };
+
+    function submitBooking(){
+        let custId = document.getElementById('custId').value;
+        let custName = document.getElementById('custName').value;
+        // console.log(empName);
+        let droneShotName = document.getElementById('shot').value;
+        let dateAndtimeFrom = new Date(document.getElementById('from').value);
+        let dateAndtimeTo =new Date(document.getElementById('to').value); 
+        let radio = document.getElementsByName('payment');
+        let payment = '';
+        for (let i=0;i<radio.length; i++) {
+            if (radio[i].checked)
+                payment = radio[i].value;
+            };
+        let status = '';
+        let check = document.getElementById('status').checked;
+        if(check==true)
+           status='Confirm';
+        else if(check==false)
+           status='Pending';
+        let pr = {bookingId:bid,custId:custId,custName:custName,droneShotName:droneShotName,dateAndtimeFrom:dateAndtimeFrom,dateAndtimeTo:dateAndtimeTo,payment:payment,status:status};
+        if(validate2(pr)){
+            if(editIndex==-1){
+            // console.log(num,id)
+            num2 = num2*1 + 1;
+            bid = 'BOOK' + num2;
+           }
+        pr.bookingId=bid;
+        editIndex>=0 ? booking[editIndex]=pr : booking.push(pr);
+        
+        editIndex>=0 ? swal("Update!", "Booking successfully updated", "success") : swal("Add!", "Booking successfully added", "success");
+        showBookings();
+        }
+        else{
+            myBooking = pr;
+            addBookingForm();
+        }
+    };
+
+    function validate(pr){
+        errors.name = pr.name ? ( pr.name.length >=5 ? '' : 'Name atleast contain 5 characters') : 'Name is mandatory';
+        errors.email = pr.email ? '' : 'Email is mandatory';
+        errors.phone = pr.phoneNo ?  ( pr.phoneNo.length ==10 ? '' : 'Phone number contains 10 numbers') : 'Phone no. is mandatory';
+        errors.address = pr.address ?  ( pr.address.length >=10 ? '' : 'Address atleast contain 10 characters') : 'Address is mandatory';
+        // errors.dept = pr.dept ? '' : 'Select the Department';
+        return !(errors.name || errors.email || errors.phone || errors.address);
+    };
+
+    function validate2(pr){
+        let Find = customer.find(function(n){
+            return n.custId === pr.custId;
+        })
+        let Name = '';
+        let FindName = customer.find(function(n){
+            if(n.custId === pr.custId)
+               Name = n.name;
+        })
+        error2.custId = pr.custId ? ( Find ? '' : 'Enter valid Customer Id') : 'Customer Id is mandatory';
+        error2.custName = pr.custName ? (Name==pr.custName ? '' : 'Customer Id and Customer Name is not match'): 'Select the Customer Name';
+        error2.droneShotName = pr.droneShotName ? '' : 'Select the Drone Shot Name';
+        error2.from = pr.dateAndtimeFrom ? '' : 'Date And Time From is mandatory';
+        error2.to = pr.dateAndtimeTo ? '' : 'Date And Time To is mandatory';
+        error2.payment = pr.payment ? '' : 'Choose the payment status';
+        return !(error2.custId || error2.custName || error2.droneShotName || error2.from || error2.to || error2.payment);
+    };
+
+    function makeNavbar(active=0){
+        let str ='<nav class="navbar navbar-expand-lg navbar-dark bg-dark">';
+        str += '<a class="navbar-brand" href="#"><img src="https://i.ibb.co/Y0tZLZX/White-Droame-Logo-Without-BG.png" alt="White-Droame-Logo-Without-BG" style="margin-left:50px; margin-right:50px; height:80px; width:100px;"></a>';
+        str += '<button class="navbar-toggler" type="button" data-toggle="collapse" data—target="#navbarNavDropdown">';
+        str += '<span class="navbar-toggler-icon"></span>';
+        str += '</button>';
+        str += '<div class="collapse navbar-collapse" id="navbarNavDropdown">';
+        str += '<ul class="navbar-nav">';
+        let active1 = active===1 ? 'active' : '';
+        let active2 = active===2 ? 'active' : '';
+        let active3 = active===3 ? 'active' : '';
+        let active4 = active===4 ? 'active' : '';
+        let active5 = active===5 ? 'active' : '';
+        let active6 = active===6 ? 'active' : '';
+        str += '<li class="nav-item '+active1+'">'
+        str += '<a class="nav-link" onclick="showCustomers()">Show Customers</a>';
+        str += '</li>';
+        str += '<li class="nav-item '+active2+'">';
+        str += '<a class="nav-link" onclick="addCustomerForm()">Add a Customer</a>';
+        str += '</li>';
+        str += '<li class="nav-item '+active3+'">';
+        str += '<a class="nav-link" onclick="showBookings()">Bookings</a>';
+        str += '</li>';
+        str += '<li class="nav-item '+active4+'">';
+        str += '<a class="nav-link" onclick="addBookingForm()">Add a Booking</a>';
+        str += '</li>';
+        // str += '<li class="nav-item '+active5+'">';
+        // str += '<a class="nav-link" onclick="showExpenses()">Expenses</a>';
+        // str += '</li>';
+        // str += '<li class="nav-item '+active6+'">';
+        // str += '<a class="nav-link" onclick="addExpanseForm()">Add an Expanse</a>';
+        // str += '</li>';
+        str += '</ul>';
+        str += '</div>';
+        str += '</nav>';
+        return str;
+    };
+
+    function showCustomerTable(){
+        const arr = customer.map((pr,index) => { 
+            let{custId,name,email,phoneNo,address} = pr;
+            let str = '<div class="row border">';
+            str += '<div class="col-2">'+custId+'</div>';
+            str += '<div class="col-2">'+name+'</div>';
+            str += '<div class="col-2">'+email+'</div>';
+            str += '<div class="col-2">'+phoneNo+'</div>';
+            str += '<div class="col-2">'+address+'</div>';
+            str += '<div class="col-2" ><button id="'+index+'" class="btn btn-secondary btn-sm " onclick="editCustomer(id)"><i class="fa-solid fa-pen-to-square" title="Edit Customer"></i></button>&nbsp;<button id="'+index+'" class="btn btn-danger btn-sm" onclick="deleteCustomer(id)"><i class="fa-solid fa-trash-can" title="Delete Customer"></i></button>&nbsp;<button id="'+custId+'" class="btn btn-warning btn-sm" onclick="showCustBooking(id)" title="Show Customer Bookings"><i class="fa-sharp fa-solid fa-eye"></i></button></div>';
+            str += '</div>';
+            return str;
+        });
+        let str = '';
+        if(customer.length==0)
+        str = '<h3>No Custumer data present!!</h3>'
+        let title = '<h3 class="text-center" style="margin:50px;">List of Customers</h3>';
+        let table = '<div class="row bg-dark text-white">';
+        table += '<div class="col-2" onclick="sort(4)">Customer Id</div>';
+        table += '<div class="col-2" onclick="sort(0)">Customer Name</div>';
+        table += '<div class="col-2" onclick="sort(1)">Customer Email</div>';
+        table += '<div class="col-2" onclick="sort(2)">Phone Number</div>';
+        table += '<div class="col-3" onclick="sort(3)">Address</div>';
+        table += '<div class="col-2" ></div>';
+        table += '</div>';
+        table += arr.join('');
+        return title+str+table;
+    };
+
+    function showBookingTable(){
+        const arr = booking.map((pr,index) => { 
+            let{bookingId,custId,custName,droneShotName,dateAndtimeFrom,dateAndtimeTo,payment,status} = pr;
+            let str = '<div class="row border">';
+            str += '<div class="col-1">'+bookingId+'</div>';
+            str += '<div class="col-1">'+custId+'</div>';
+            str += '<div class="col-1">'+custName+'</div>';
+            str += '<div class="col-2">'+droneShotName+'</div>';
+            str += '<div class="col-1">'+dateAndtimeFrom+'</div>';
+            str += '<div class="col-1">'+dateAndtimeTo+'</div>';
+            str += '<div class="col-1">'+payment+'</div>';
+            str += '<div class="col-1">'+status+'</div>';
+            str += '<div class="col-3">';
+            if(status=='Pending')
+            str += '<button id="'+index+'" class="btn btn-secondary btn-sm " onclick="Approve(id)">Confirm</button>&nbsp;'
+            str += '<button id="'+index+'" class="btn btn-warning btn-sm " onclick="editBooking(id)">Edit</button>&nbsp;<button id="'+index+'" class="btn btn-danger btn-sm" onclick="deleteBooking(id)">Delete</button></div>';
+            str += '</div>';
+            return str;
+        });
+        let str = '';
+        if(booking.length==0)
+        str = '<h3>No Booking data present!!</h3>'
+        let title = '<h3 class="text-center" style="margin:50px;">List of Bookings for all Customers</h3>';
+        let table = '<div class="row bg-dark text-white">';
+        table += '<div class="col-1">Booking Id</div>';
+        table += '<div class="col-1">Customer Id</div>';
+        table += '<div class="col-1">Customer Name</div>';
+        table += '<div class="col-2">DroneShot Name</div>';
+        table += '<div class="col-1">Date/Time From</div>';
+        table += '<div class="col-1">Date/Time To</div>';
+        table += '<div class="col-1">Payment Status</div>';
+        table += '<div class="col-1">Booking Status</div>';
+        table += '<div class="col-3" ></div>';
+        table += '</div>';
+        table += arr.join('');
+        return title+str+table;
+    };
+
+    function personBookingTable(id){
+        let nam = '';
+        const Person = booking.filter(function(n){
+            return n.custId==id;
+        });
+        const Find = customer.find(function(n){
+            if(n.custId==id)
+               nam=n.name;
+        });
+        per = Person;
+        
+        const arr = Person.map((pr,index) => { 
+            let{bookingId,custId,custName,droneShotName,dateAndtimeFrom,dateAndtimeTo,payment,status} = pr;
+            let str = '<div class="row border">';
+            str += '<div class="col-1">'+bookingId+'</div>';
+            str += '<div class="col-1">'+custId+'</div>';
+            str += '<div class="col-1">'+custName+'</div>';
+            str += '<div class="col-2">'+droneShotName+'</div>';
+            str += '<div class="col-1">'+dateAndtimeFrom+'</div>';
+            str += '<div class="col-1">'+dateAndtimeTo+'</div>';
+            str += '<div class="col-1">'+payment+'</div>';
+            str += '<div class="col-1">'+status+'</div>';
+            str += '<div class="col-3">';
+            if(status=='Pending')
+            str += '<button id="'+index+'" class="btn btn-secondary btn-sm " onclick="Confirm(id)">Confirm</button>&nbsp;'
+            str += '<button id="'+index+'" class="btn btn-warning btn-sm " onclick="editBooking(id)">Edit</button>&nbsp;<button id="'+index+'" class="btn btn-danger btn-sm" onclick="deleteBooking(id)">Delete</button></div>';
+            str += '</div>';
+            return str;
+        });
+        let str = '';
+        if(Person.length==0)
+        str = '<h3>No Booking data present for '+nam+'!!</h3>'
+        let title = '<h3 class="text-center" style="margin:50px;">List of Bookings for '+nam+'</h3>';
+        let table = '<div class="row bg-dark text-white">';
+        table += '<div class="col-1">Booking Id</div>';
+        table += '<div class="col-1">Customer Id</div>';
+        table += '<div class="col-1">Customer Name</div>';
+        table += '<div class="col-2">DroneShot Name</div>';
+        table += '<div class="col-1">Date/Time From</div>';
+        table += '<div class="col-1">Date/Time To</div>';
+        table += '<div class="col-1">Payment Status</div>';
+        table += '<div class="col-1">Booking Status</div>';
+        table += '<div class="col-3" ></div>';
+        table += '</div>';
+        table += arr.join('');
+        return title+str+table;
+    };
+
+    function showForm(){
+        let {custId='',name='',email='',phoneNo='',address=''} = myCustomer;
+        let title = editIndex>=0 ? 'Edit Customer Details' : 'Add a New Customer';
+        id = custId;
+        let str = '<h3 class="text-center" style="margin:50px;">'+title+'</h3>';
+        str += makeTextField('name','Customer Name', 'Enter Customer Name',name,errors.name);
+        str+= makeTextField('email','Customer Email','Enter Customer Email',email,errors.email);
+        str+= makeTextField('phone','Customer Phone','Enter Customer Phone',phoneNo,errors.phone);
+        str+= makeTextField('address','Customer Address','Enter Customer Address',address,errors.address);
+        str+= editIndex>=0 ? '<button class="btn btn-primary" onclick="submitCustomer()">Update Customer</button>' : '<button class="btn btn-primary" onclick="submitCustomer()">Add Customer</button>';
+        return str;
+    };
+
+    function showBookingForm(){
+        let {bookingId='',custId='',custName='',droneShotName='',dateAndtimeFrom='',dateAndtimeTo='',payment='',status=''} = myBooking;
+        bid = bookingId;
+        let title = editIndex>=0 ? 'Edit Booking Details' : 'Add a New Booking';
+        let str = '<h3 class="text-center" style="margin:50px;">'+title+'</h3>';
+        str+= makeTextField('custId','Custumer Id','Enter the Customer Id',custId,error2.custId);
+        str += makeDropdown('custName',customerName, 'Select the Customer',custName,error2.custName);
+        str+= makeDropdown('shot',Shots,'Select the Drone Shot',droneShotName,error2.droneShotName);
+        str+= makeTextField('from','Booking Starting Date and Time','',dateAndtimeFrom,error2.from);
+        str+= makeTextField('to','Booking Ending Date and Time','',dateAndtimeTo,error2.to);
+        str += makeRadios(Payment,'Payment Status','payment',payment,error2.payment);
+        str += makeCheckbox('status','Has the booking been confirmed',status);
+        str+= editIndex>=0 ? '<br><button class="btn btn-primary" onclick="submitBooking()">Update Booking</button>' : '<br><button class="btn btn-primary" onclick="submitBooking()">Submit Booking</button>';
+        return str;
+    };
+
+    function makeTextField(id, label, placeholder='',value='',err=''){
+        let str = '';
+        if(id=='from' || id=='to')
+        str += '<div class="form-group col-3">';
+        str += '<label>'+label+'</label>';
+        if(id=='phone')
+        str+= '<input type="number" class="form-control" id="'+id+'" placeholder="'+placeholder+'" value="'+value+'">';
+        else if(id=='from')
+        str+= '<input type="datetime-local" class="form-control " min="${new Date().toISOString().slice(0, -8)}" id="'+id+'" placeholder="'+placeholder+'" value="'+value+'">';
+        else if(id=='to')
+        str+= '<input type="datetime-local" class="form-control " min="${new Date().toISOString().slice(0, -8)}" id="'+id+'" placeholder="'+placeholder+'" value="'+value+'">';
+        else 
+        str+= '<input type="text" class="form-control" id="'+id+'" placeholder="'+placeholder+'" value="'+value+'">';
+        str += err ? '<span class="text-danger">'+err+'</span>' : '';
+        str += '</div><br>';
+        return str;
+    };
+
+    function makeRadios(arr,label,name,radioValue='',err=''){
+            const arr1 = arr.map(opt => {
+                let check = radioValue===opt ? 'checked' : '';
+                let str = '<div class="form-check form-check-inline">';
+                str += '<input class="form-check-input" type="radio" name="'+name+'" value="'+opt+'" '+check+'>';
+                str += '<label class="form-check-label">'+opt+'</label>';
+                str += '</div>';
+                return str;
+            });
+
+            let s1 = '<div class="form-check form-check-inline">';
+            s1 += '<label class="form-check-label">'+label+'</label>';
+            s1 += '</div>';
+            s1 += arr1.join('');
+            s1 += err ? '<br><span class="text-danger">'+err+'</span>' : '';
+            return s1;
+        };
+
+        function makeDropdown(id,options,first,selValue,err=''){
+            const arr1 = options.map( opt => {
+                let selected = opt ===selValue ? 'selected' : '';
+                return '<option '+selected+'>'+opt+'</option>';
+            });
+            let s1 = '<div class="form-group">';
+            s1 += '<select id = "'+id+'" class="form-control">';
+            let selectedHeader = selValue ? '' : 'selected';
+            // console.log(selValue)
+            s1 += '<option value="" disabled '+selectedHeader+'>'+first+'</option>';
+            s1 += arr1.join('');
+            s1 += '</select>';
+            s1 += err ? '<span class="text-danger">'+err+'</span>' : '';
+            s1 += '</div>';
+            s1 += '</div><br>';
+            return s1;
+        };
+
+        function makeCheckbox(id,label,checked){
+            console.log(typeof checked);
+            // let c1 =  ? '' : '';
+            // console.log(c1)
+            let str = '<div class="form-check">';
+                if(checked==='confirm')
+                str += '<input class="form-check-input" type="checkbox" id="'+id+'" checked>';
+                else
+                str += '<input class="form-check-input" type="checkbox" id="'+id+'">';
+                str += '<label class="form-check-label">'+label+'</label>';
+                str += '</div>';
+                return str;
+        };
+
+        function deleteCustomer(index){
+            swal({
+                title: "Are you sure?",
+                text: "Once deleted, you will not be able to recover this!",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+                })
+            .then((willDelete) => {
+                if (willDelete) {
+                    swal("Customer deleted successfully", {
+                    icon: "success"
+                    });
+                    customer.splice(index,1);
+                    showCustomers();
+                } 
+                else {
+                swal("Your Customer is safe!");
+                showCustomers();
+                }
+            });
+        };
+
+        function editBooking(index){
+            editIndex = index;
+            myBooking = booking[index];
+            addBookingForm();
+        };
+
+        function deleteBooking(index){
+            swal({
+                title: "Are you sure?",
+                text: "Once deleted, you will not be able to recover this!",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+                })
+            .then((willDelete) => {
+                if (willDelete) {
+                    swal("Booking deleted successfully", {
+                    icon: "success"
+                    });
+                    booking.splice(index,1);
+                    showBookings();
+                } 
+                else {
+                swal("Your Booking is safe!");
+                showBookings();
+                }
+            });
+            
+        };
+
+        function editCustomer(index){
+            editIndex = index;
+            myCustomer = customer[index];
+            addCustomerForm();
+        };
+
+        function Approve(index){
+            booking[index].status='Confirm';
+            showBookings();
+        };
+
+        function Confirm(index){
+            console.log(index)
+            per[index].status='Confirm';
+            showCustBooking(per[index].custId);
+        };
+
+</script>
+</html>
